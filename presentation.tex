@@ -91,80 +91,6 @@
   \maketitle
 \end{frame}
 
-% \begin{frame}{\acfp{CRDT} \footfullcite{shapiro_2011_crdt}}
-%   \begin{columns}
-%     \begin{column}{0.65\textwidth}
-%       \begin{tikzpicture}
-
-%         \node (origin) {};
-%         \path (origin)
-%           to ++(90:2) node[label=below:{\textbf{A}},
-%             label=above:{
-%               \includegraphics<1>[scale=0.5]{img/doc.pdf}
-%               \includegraphics<2-4>[scale=0.5]{img/docA.pdf}
-%               \includegraphics<5->[scale=0.5]{img/docABC.pdf}}
-%           ] (A) {\includegraphics{img/blue-node.pdf}};
-
-%         \path (origin)
-%           to ++(225:2) node[label=below:{\textbf{B}},
-%             label=left:{
-%               \includegraphics<1-2>[scale=0.5]{img/doc.pdf}
-%               \includegraphics<3>[scale=0.5]{img/docA.pdf}
-%               \includegraphics<4>[scale=0.5]{img/docAB.pdf}
-%               \includegraphics<5>[scale=0.5]{img/docABC.pdf}
-%             }] (B) {\includegraphics{img/red-node.pdf}};
-
-%         \path (origin)
-%           to ++(-45:2) node[label=below:{C},
-%             label=right:{
-%               {\transparent{0.4}\includegraphics<1-3>[scale=0.5]{img/doc.pdf}}
-%               \includegraphics<4>[scale=0.5]{img/docC.pdf}
-%               \includegraphics<5->[scale=0.5]{img/docABC.pdf}
-%             }] (C) {
-%               {\transparent{0.4}\includegraphics<1-3>{img/green-node.pdf}}
-%               \includegraphics<4->{img/green-node.pdf}
-%               };
-
-%         \draw (A) -- (B) -- (C) -- (A);
-
-%         \node<2>[below left=-30pt and 5pt of A] {\includegraphics[scale=0.4]{img/blue-update.pdf}};
-%         \node<2, 4>[below right=-30pt and 5pt of A] {\includegraphics[scale=0.4]{img/blue-update.pdf}};
-
-%         \node<4>[below right=-4pt and 1pt of B] {\includegraphics[scale=0.5]{img/red-update.pdf}};
-%         \node<4>[above left=1pt and -15pt of B] {\includegraphics[scale=0.5]{img/red-update.pdf}};
-
-%         \node<4>[below left=-4pt and 1pt of C] {\includegraphics[scale=0.5]{img/green-update.pdf}};
-%         \node<4>[above right=1pt and -15pt of C] {\includegraphics[scale=0.5]{img/green-update.pdf}};
-%       \end{tikzpicture}
-%     \end{column}
-%     \begin{column}{0.35\textwidth}
-%       \begin{itemize}
-%         \item Replicated data structure
-%         \item<2-> Updates performed without coordination
-%         \item<5-> Strong Eventual Consistency
-%       \end{itemize}
-%     \end{column}
-%   \end{columns}
-% \end{frame}
-
-% \begin{frame}{Identifier-based \acp{CRDT}}
-%   \begin{block}{Main idea}
-%     \begin{itemize}
-%       \item Attach an identifier to each element
-%     \end{itemize}
-%   \end{block}
-
-%   \bigskip
-
-%   \begin{block}{Allow to design commutative updates}
-%     \begin{itemize}
-%       \item Identifying uniquely elements
-%       \item Ordering concurrent updates
-%       \item ...
-%     \end{itemize}
-%   \end{block}
-% \end{frame}
-
 \begin{frame}{Context}
   \begin{itemize}
     \item Working on data replication in Local-first softwares \footfullcite{10.1145/3359591.3359737}
@@ -184,7 +110,7 @@
   \pause
 
   \begin{columns}
-    \begin{column}{0.5\textwidth}
+    \begin{column}{0.33\textwidth}
       \begin{figure}
         \centering
         \begin{tikzpicture}
@@ -197,8 +123,7 @@
       \end{figure}
     \end{column}
     \pause
-    \begin{column}{0.5\textwidth}
-      \vspace{-5mm}
+    \begin{column}{0.33\textwidth}
       \begin{figure}
         \centering
         \begin{tikzpicture}
@@ -208,56 +133,24 @@
         \caption{State of a sequence which contains the block "hlo"}
       \end{figure}
     \end{column}
+    \pause
+    \begin{column}{0.33\textwidth}
+      \begin{figure}
+        \centering
+        \begin{tikzpicture}
+            \path
+              node[letter, label=below:{\id{i}{B0}{0}}] {H}
+              to ++(0:\widthletter) node[letter, fill=mydarkorange, label=above:{\color{mydarkorange}\id{i}{B0}{0}\id{f}{A0}{0}}] {E}
+            to ++(0:\widthletter) node[block, label={below:\id{i}{B0}{1..2}}] {LO};
+        \end{tikzpicture}
+        \caption{State of a sequence which contains the elements "hlo" and their corresponding identifiers}
+      \end{figure}
+    \end{column}
   \end{columns}
 \end{frame}
 
-\begin{frame}{Example}
-  \begin{figure}
-    \begin{tikzpicture}
-      \path
-        node {\textbf{A}}
-        to ++(0:\widthletter) node[block, label=below:{\id{i}{B0}{0..2}}] (HLOA) {HLO}
-        to ++(0:4 * \widthletter) node[visible on=<2->, letter,
-          label={ [visible on=<2->] below:{\id{i}{B0}{0}} }
-          ] (HA) {H}
-        to ++(0:\widthletter) node[visible on=<2->, letter, fill=mydarkorange,
-            label={ [visible on=<3->] above:{\color{mydarkorange}\id{i}{B0}{0}\id{f}{A0}{0}} }
-          ] {E}
-        to ++(0:\widthletter) node[visible on=<2->, block,
-            label={ [visible on=<2->] below:{\id{i}{B0}{1..2}} }
-          ] (LO) {LO}
-        to ++(270:2)
-        to ++(0:4 * \widthletter) node[visible on=<4->, letter,
-            label={ [visible on=<4->] below:{\id{i}{B0}{0}} }
-          ] (HB) {H}
-        to ++(0:\widthletter) node[visible on=<4->, letter, fill=mydarkorange,
-            label={ [visible on=<4->] above:{\color{mydarkorange}\id{i}{B0}{0}\id{f}{A0}{0}} }
-          ] {E}
-        to ++(0:\widthletter) node[visible on=<4->, block,
-            label={ [visible on=<4->] below:{\id{i}{B0}{1..2}} }
-          ] {LO};
-
-      \path
-        to ++(270:2) node {\textbf{B}}
-        to ++(0:\widthletter) node[block, label=below:{\id{i}{B0}{0..2}}] (HLOB) {HLO};
-
-      \draw[visible on=<2->, ->, thick] (HLOA) -- node[above, align=center]{\emph{insert "e"}\\\emph{between}\\\emph{"h" and "l"}} (HA);
-      \draw[visible on=<4->, dotted] (HLOB) -- (HB);
-      \draw[visible on=<4->, ->, thick] (LO.east) -- node[near end, below left, align=center]{\emph{insert "e"}\\\emph{at}\\\id{i}{B0}{0}\id{f}{A0}{0}} (HB.west);
-    \end{tikzpicture}
-    \caption{Example of concurrent $insert$ operations}
-  \end{figure}
-\end{frame}
-
 \begin{frame}{Research issue}
-  \begin{alertblock}{Limits}
-    \begin{itemize}
-      \item Unbounded size of identifiers
-      \item Overhead of the data structure increasing over time
-    \end{itemize}
-  \end{alertblock}
-
-  \pause
+  \alert{How to reduce the overhead introduced by the data structure?}
 
   \begin{figure}
     \centering
@@ -274,10 +167,6 @@
 
 %   Reassign shorter identifiers in a fully distributed manner
 % \end{frame}
-
-\begin{frame}[standout]
-  \alert{How to reduce the overhead introduced by the data structure ?}
-\end{frame}
 
 \begin{frame}{Related work}
   \begin{itemize}
@@ -341,23 +230,23 @@
   \end{itemize}
 \end{frame}
 
-\begin{frame}{Handling concurrent operations - part 1}
-  \begin{itemize}
-    \item Others may perform updates concurrently to a \emph{rename} operation
-  \end{itemize}
-  \begin{figure}
-    \centering
-    \includegraphics<1>[scale=0.75]{img/concurrent-op-initial-state.pdf}
-    \includegraphics<2>[scale=0.75]{img/concurrent-op-before-applying.pdf}
-    \includegraphics<3>[scale=0.75]{img/concurrent-op-inconsistency.pdf}
-    \caption{Example of concurrent insert}
-  \end{figure}
-  \begin{itemize}
-    \item<3> May lead to inconsistencies
-  \end{itemize}
-\end{frame}
+% \begin{frame}{Handling concurrent operations - part 1}
+%   \begin{itemize}
+%     \item Others may perform updates concurrently to a \emph{rename} operation
+%   \end{itemize}
+%   \begin{figure}
+%     \centering
+%     \includegraphics<1>[scale=0.75]{img/concurrent-op-initial-state.pdf}
+%     \includegraphics<2>[scale=0.75]{img/concurrent-op-before-applying.pdf}
+%     \includegraphics<3>[scale=0.75]{img/concurrent-op-inconsistency.pdf}
+%     \caption{Example of concurrent insert}
+%   \end{figure}
+%   \begin{itemize}
+%     \item<3> May lead to inconsistencies
+%   \end{itemize}
+% \end{frame}
 
-\begin{frame}{Handling concurrent operations - part 2}
+\begin{frame}{Handling concurrent operations}
   \begin{figure}
     \centering
     \includegraphics<1>[scale=0.75]{img/concurrent-op-before-applying.pdf}
@@ -377,29 +266,6 @@
   \end{itemize}
 \end{frame}
 
-\begin{frame}{Downsides}
-  \begin{block}{Need to store former state until no more concurrent operations}
-
-    \pause
-
-    \begin{itemize}
-      \item Can garbage collect it once the \emph{rename} operation is causally stable \footfullcite{10.1007/978-3-662-43352-2_11}
-      \item Can offload it to the disk meanwhile
-    \end{itemize}
-  \end{block}
-
-  \pause
-
-  \begin{block}{Need to propagate former state to other nodes}
-
-    \pause
-
-    \begin{itemize}
-      \item Can compress the operation to minimise bandwidth consumption
-    \end{itemize}
-  \end{block}
-\end{frame}
-
 % \begin{frame}[standout]
 %   What about concurrent \emph{rename} operations ?
 % \end{frame}
@@ -410,21 +276,14 @@
 
 
 \begin{frame}{Scenario}
-  \begin{itemize}
-    \item \textbf{Assumption:} Only one node can issue \emph{rename} operations
-  \end{itemize}
-
   \begin{block}{Ran simulations to evaluate proposed approach:}
     \begin{itemize}
-      \item 10 nodes share and edit a document collaboratively
-      \item Nodes use either LogootSplit or RenamableLogootSplit according to session
-      \pause
       \item \textbf{Phase 1 (content generation):} 80/20\% of \emph{insert}/\emph{remove}
       \item \textbf{Phase 2 (refactoring):} 50/50\% of \emph{insert}/\emph{remove}
       \item Nodes switch to phase 2 when document reaches critical size (15 pages - 60k elements)
       \pause
       \item Overall, nodes perform 150k operations on the document
-      \item In the case of \emph{RenamableLogootSplit}, trigger a \emph{rename} operation every 30k operations
+      \item Trigger a \emph{rename} operation every 30k operations
     \end{itemize}
   \end{block}
 \end{frame}
@@ -574,6 +433,29 @@
   \begin{block}{Dense set}
     \begin{itemize}
       \item We should always be able to add a new element, and thus a new identifier, between two others
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}{Downsides}
+  \begin{block}{Need to store former state until no more concurrent operations}
+
+    \pause
+
+    \begin{itemize}
+      \item Can garbage collect it once the \emph{rename} operation is causally stable \footfullcite{10.1007/978-3-662-43352-2_11}
+      \item Can offload it to the disk meanwhile
+    \end{itemize}
+  \end{block}
+
+  \pause
+
+  \begin{block}{Need to propagate former state to other nodes}
+
+    \pause
+
+    \begin{itemize}
+      \item Can compress the operation to minimise bandwidth consumption
     \end{itemize}
   \end{block}
 \end{frame}
