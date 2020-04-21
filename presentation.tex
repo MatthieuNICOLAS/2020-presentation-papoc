@@ -1,0 +1,627 @@
+\documentclass[10pt]{beamer}
+\usepackage[utf8]{inputenc}
+
+\usetheme{metropolis}
+
+\usepackage{acronym} % \ac[p], \acl[p], \acs[p], \acf[p]
+\usepackage{appendixnumberbeamer}
+\usepackage[scale=2]{ccicons}
+\usepackage{subcaption} % subfigure
+\usepackage[absolute, overlay]{textpos}
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+\usepackage{verbatim}
+
+\usepackage{graphicx}
+\usepackage{color}
+\AtBeginDocument{
+\definecolor{pdfurlcolor}{rgb}{0,0,0}
+\definecolor{pdfcitecolor}{rgb}{0,0,0}
+\definecolor{pdflinkcolor}{rgb}{0,0,0}
+\definecolor{light}{gray}{.85}
+\definecolor{vlight}{gray}{.95}
+\definecolor{darkgreen}{rgb}{0.0, 0.2, 0.13}
+\definecolor{mydarkblue}{RGB}{116,173,209}
+\definecolor{mydarkblueid}{RGB}{83,154,198}
+\definecolor{mylightblue}{RGB}{171,217,233}
+\definecolor{mydarkorange}{RGB}{244,109,67}
+\definecolor{mylightorange}{RGB}{252,153,54}
+\definecolor{mydarkred}{RGB}{215,48,39}
+}
+
+% Acronyms
+% --------
+\acrodef{CRDT}[CRDT]{Conflict-free Replicated Data Type}
+\acrodefplural{CRDT}[CRDTs]{Conflict-free Replicated Data Types}
+
+\author{
+  Matthieu Nicolas (\url{matthieu.nicolas@inria.fr})
+  \\
+  COAST team
+  \\
+  \textbf{Supervised by} Gérald Oster and Olivier Perrin
+}
+\title{Efficient renaming in Conflict-free Replicated Data Types (CRDTs)}
+\subtitle{Case Study of a Sequence CRDT : LogootSplit}
+\institute{
+  \vspace{3em}
+  \includegraphics[width=2.8cm]{img/loria-logo.png}\hspace{3em}
+  \includegraphics[width=1.2cm]{img/ul-logo.pdf}\hspace{3em}
+  \includegraphics[width=3cm]{img/inria-logo.pdf}\hspace{3em}
+  \includegraphics[width=1.2cm]{img/cnrs-logo.png}
+}
+
+\usepackage[backend=biber,defernumbers=true,style=trad-plain,sorting=ydnt,maxbibnames=1,maxcitenames=1]{biblatex}
+\addbibresource{biblio.bib}
+\AtBeginBibliography{\footnotesize}
+\setbeamertemplate{bibliography item}[text] % use ref number in bibliography
+
+\renewcommand{\thefootnote}{[\arabic{footnote}]}
+\newcommand{\trm}[1]{\mathit{#1}}
+\newcommand{\id}[3]{$\trm{#1}^{\trm{#2}}_{\trm{#3}}$}
+
+\newcommand{\widthletter}{7mm}
+\newcommand{\widthblock}{11mm}
+
+% Tikz styles
+\tikzset{
+    common/.style={anchor=west, draw, rectangle, minimum height=6mm},
+    letter/.style={common, minimum width=\widthletter},
+    block/.style={common, minimum width=\widthblock},
+    cross/.style={
+        path picture={
+            \draw[mydarkred, very thick]
+                (path picture bounding box.south east)--(path picture bounding box.north west)
+                (path picture bounding box.south west)--(path picture bounding box.north east);
+        }
+    },
+    invisible/.style={opacity=0,text opacity=0},
+    visible on/.style={alt=#1{}{invisible}},
+    alt/.code args={<#1>#2#3}{%
+      \alt<#1>{\pgfkeysalso{#2}}{\pgfkeysalso{#3}} % \pgfkeysalso doesn't change the path
+    },
+}
+
+\usepackage{silence}
+\WarningFilter{biblatex}{Patching footnotes failed}
+
+\begin{document}
+
+\begin{frame}[t,plain]
+  \maketitle
+\end{frame}
+
+% \begin{frame}{\acfp{CRDT} \footfullcite{shapiro_2011_crdt}}
+%   \begin{columns}
+%     \begin{column}{0.65\textwidth}
+%       \begin{tikzpicture}
+
+%         \node (origin) {};
+%         \path (origin)
+%           to ++(90:2) node[label=below:{\textbf{A}},
+%             label=above:{
+%               \includegraphics<1>[scale=0.5]{img/doc.pdf}
+%               \includegraphics<2-4>[scale=0.5]{img/docA.pdf}
+%               \includegraphics<5->[scale=0.5]{img/docABC.pdf}}
+%           ] (A) {\includegraphics{img/blue-node.pdf}};
+
+%         \path (origin)
+%           to ++(225:2) node[label=below:{\textbf{B}},
+%             label=left:{
+%               \includegraphics<1-2>[scale=0.5]{img/doc.pdf}
+%               \includegraphics<3>[scale=0.5]{img/docA.pdf}
+%               \includegraphics<4>[scale=0.5]{img/docAB.pdf}
+%               \includegraphics<5>[scale=0.5]{img/docABC.pdf}
+%             }] (B) {\includegraphics{img/red-node.pdf}};
+
+%         \path (origin)
+%           to ++(-45:2) node[label=below:{C},
+%             label=right:{
+%               {\transparent{0.4}\includegraphics<1-3>[scale=0.5]{img/doc.pdf}}
+%               \includegraphics<4>[scale=0.5]{img/docC.pdf}
+%               \includegraphics<5->[scale=0.5]{img/docABC.pdf}
+%             }] (C) {
+%               {\transparent{0.4}\includegraphics<1-3>{img/green-node.pdf}}
+%               \includegraphics<4->{img/green-node.pdf}
+%               };
+
+%         \draw (A) -- (B) -- (C) -- (A);
+
+%         \node<2>[below left=-30pt and 5pt of A] {\includegraphics[scale=0.4]{img/blue-update.pdf}};
+%         \node<2, 4>[below right=-30pt and 5pt of A] {\includegraphics[scale=0.4]{img/blue-update.pdf}};
+
+%         \node<4>[below right=-4pt and 1pt of B] {\includegraphics[scale=0.5]{img/red-update.pdf}};
+%         \node<4>[above left=1pt and -15pt of B] {\includegraphics[scale=0.5]{img/red-update.pdf}};
+
+%         \node<4>[below left=-4pt and 1pt of C] {\includegraphics[scale=0.5]{img/green-update.pdf}};
+%         \node<4>[above right=1pt and -15pt of C] {\includegraphics[scale=0.5]{img/green-update.pdf}};
+%       \end{tikzpicture}
+%     \end{column}
+%     \begin{column}{0.35\textwidth}
+%       \begin{itemize}
+%         \item Replicated data structure
+%         \item<2-> Updates performed without coordination
+%         \item<5-> Strong Eventual Consistency
+%       \end{itemize}
+%     \end{column}
+%   \end{columns}
+% \end{frame}
+
+% \begin{frame}{Identifier-based \acp{CRDT}}
+%   \begin{block}{Main idea}
+%     \begin{itemize}
+%       \item Attach an identifier to each element
+%     \end{itemize}
+%   \end{block}
+
+%   \bigskip
+
+%   \begin{block}{Allow to design commutative updates}
+%     \begin{itemize}
+%       \item Identifying uniquely elements
+%       \item Ordering concurrent updates
+%       \item ...
+%     \end{itemize}
+%   \end{block}
+% \end{frame}
+
+\begin{frame}{Context}
+  \begin{itemize}
+    \item Working on data replication in Local-first softwares \footfullcite{10.1145/3359591.3359737}
+    \item Currently focusing on \emph{Sequence \acp{CRDT}}
+    \begin{itemize}
+      \item Notably used for real-time collaborative text editing
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{LogootSplit \footfullcite{AndreCollaborateCom2013}}
+  \begin{itemize}
+    \item State of the art of \emph{Sequence \acp{CRDT}}
+    \item Elements are ordered by their identifier, noted here with the following formalism: \id{position}{node~id~node~seq}{offset}
+  \end{itemize}
+
+  \pause
+
+  \begin{columns}
+    \begin{column}{0.5\textwidth}
+      \begin{figure}
+        \centering
+        \begin{tikzpicture}
+            \path
+                node[letter, label=below:{\id{i}{B0}{0}}] {H}
+                to ++(0:\widthletter) node[letter, label=below:{\id{i}{B0}{1}}] {L}
+                to ++(0:\widthletter) node[letter, label=below:{\id{i}{B0}{2}}] {O};
+        \end{tikzpicture}
+        \caption{State of a sequence which contains the elements "hlo" and their corresponding identifiers}
+      \end{figure}
+    \end{column}
+    \pause
+    \begin{column}{0.5\textwidth}
+      \vspace{-5mm}
+      \begin{figure}
+        \centering
+        \begin{tikzpicture}
+            \path
+                node[block, label=below:{\id{i}{B0}{0..2}}] {HLO};
+        \end{tikzpicture}
+        \caption{State of a sequence which contains the block "hlo"}
+      \end{figure}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Example}
+  \begin{figure}
+    \begin{tikzpicture}
+      \path
+        node {\textbf{A}}
+        to ++(0:\widthletter) node[block, label=below:{\id{i}{B0}{0..2}}] (HLOA) {HLO}
+        to ++(0:4 * \widthletter) node[visible on=<2->, letter,
+          label={ [visible on=<2->] below:{\id{i}{B0}{0}} }
+          ] (HA) {H}
+        to ++(0:\widthletter) node[visible on=<2->, letter, fill=mydarkorange,
+            label={ [visible on=<3->] above:{\color{mydarkorange}\id{i}{B0}{0}\id{f}{A0}{0}} }
+          ] {E}
+        to ++(0:\widthletter) node[visible on=<2->, block,
+            label={ [visible on=<2->] below:{\id{i}{B0}{1..2}} }
+          ] (LO) {LO}
+        to ++(270:2)
+        to ++(0:4 * \widthletter) node[visible on=<4->, letter,
+            label={ [visible on=<4->] below:{\id{i}{B0}{0}} }
+          ] (HB) {H}
+        to ++(0:\widthletter) node[visible on=<4->, letter, fill=mydarkorange,
+            label={ [visible on=<4->] above:{\color{mydarkorange}\id{i}{B0}{0}\id{f}{A0}{0}} }
+          ] {E}
+        to ++(0:\widthletter) node[visible on=<4->, block,
+            label={ [visible on=<4->] below:{\id{i}{B0}{1..2}} }
+          ] {LO};
+
+      \path
+        to ++(270:2) node {\textbf{B}}
+        to ++(0:\widthletter) node[block, label=below:{\id{i}{B0}{0..2}}] (HLOB) {HLO};
+
+      \draw<2->[->, thick] (HLOA) -- node[above, align=center]{\emph{insert "e"}\\\emph{between}\\\emph{"h" and "l"}} (HA);
+      \draw<4->[dotted] (HLOB) -- (HB);
+      \draw<4->[->, thick] (LO.east) -- node[near end, below left, align=center]{\emph{insert "e"}\\\emph{at}\\\id{i}{B0}{0}\id{f}{A0}{0}} (HB.west);
+    \end{tikzpicture}
+    \caption{Example of concurrent $insert$ operations}
+  \end{figure}
+\end{frame}
+
+\begin{frame}{Research issue}
+  \begin{alertblock}{Limits}
+    \begin{itemize}
+      \item Unbounded size of identifiers
+      \item Overhead of the data structure increasing over time
+    \end{itemize}
+  \end{alertblock}
+
+  \pause
+
+  \begin{figure}
+    \centering
+    \includegraphics[width=0.4\textwidth]{img/overhead-size.pdf}
+    \caption{Footprint of the data structure}
+  \end{figure}
+\end{frame}
+
+% \begin{frame}[standout]
+%   \alert{How to reduce the overhead introduced by the data structure ?}
+
+%   \bigskip
+%   \pause
+
+%   Reassign shorter identifiers in a fully distributed manner
+% \end{frame}
+
+\begin{frame}[standout]
+  \alert{How to reduce the overhead introduced by the data structure ?}
+\end{frame}
+
+\begin{frame}{Related work}
+  \begin{itemize}
+    \item Core-nebula approach \footfullcite{zawirski:hal-01248197}
+    \begin{itemize}
+      \item Reassigns shorter identifiers to elements\dots
+      \item \dots but requires consensus
+    \end{itemize}
+    \item LSEQ \footfullcite{doi:10.1002/cpe.4108}
+    \begin{itemize}
+      \item Set of strategies to reduce the growth of identifiers \dots
+      \item \dots but overhead still proportional to number of elements
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[standout]
+  \alert{Our approach}
+
+  \bigskip
+
+  Reassign shorter identifiers in a fully distributed manner
+\end{frame}
+
+\begin{frame}{RenamableLogootSplit}
+  \begin{itemize}
+    \item Propose \emph{RenamableLogootSplit}, \emph{LogootSplit} with a $rename$ operation
+    \item Can be perform without coordination
+    \item Today, focus on scenario without concurrent \emph{rename} operations
+  \end{itemize}
+  \begin{figure}
+    \begin{tikzpicture}
+      \path
+          node {\textbf{A}}
+          to ++(0:\widthletter) node[letter, label=below:{\id{i}{B0}{0}}] {H}
+          to ++(0:\widthletter) node[letter, fill=mydarkorange, label=above:{\color{mydarkorange}\id{i}{B0}{0}\id{f}{A0}{0}}] {E}
+          to ++(0:\widthletter) node[block, label=below:{\id{i}{B0}{1..2}}] (LO) {LO}
+          to ++(0:4 * \widthletter) node[visible on=<{2-3}>, letter, fill=mydarkblue,
+              label={ [visible on=<{2-3}>] below:{\color{mydarkblueid}\id{i}{A1}{0}} }
+            ] (H) {H}
+          to ++(0:\widthletter) node[visible on=<3>, letter, fill=mydarkblue,
+              label={ [visible on=<3>] below:{\color{mydarkblueid}\id{i}{A1}{1}} }
+            ] {E}
+          to ++(0:\widthletter) node[visible on=<3>, letter, fill=mydarkblue,
+              label={ [visible on=<3>] below:{\color{mydarkblueid}\id{i}{A1}{2}} }
+            ] {L}
+          to ++(0:\widthletter) node[visible on=<3>, letter, fill=mydarkblue,
+            label={ [visible on=<3>] below:{\color{mydarkblueid}\id{i}{A1}{3}} }
+          ] {0}
+          to ++(180:3 * \widthletter) node[visible on=<4>, block, fill=mydarkblue,
+              label={ [visible on=<4>] below:{\color{mydarkblueid}\id{i}{A1}{0..3}} }
+            ] (HELO) {HELO};
+
+      \draw[->, thick] (LO) -- node[below, align=center]{\emph{rename}} (H);
+    \end{tikzpicture}
+    \caption{Example of renaming}
+  \end{figure}
+  \begin{itemize}
+    \item<2-> Generates a new identifier for the first element, based on its previous identifier
+    \item<3-> Then generates contiguous identifiers for all following elements
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Handling concurrent operations - part 1}
+  \begin{itemize}
+    \item Others may perform updates concurrently to a \emph{rename} operation
+  \end{itemize}
+  \begin{figure}
+    \centering
+    \includegraphics<1>[scale=0.75]{img/concurrent-op-initial-state.pdf}
+    \includegraphics<2>[scale=0.75]{img/concurrent-op-before-applying.pdf}
+    \includegraphics<3>[scale=0.75]{img/concurrent-op-inconsistency.pdf}
+    \caption{Example of concurrent insert}
+  \end{figure}
+  \begin{itemize}
+    \item<3> May lead to inconsistencies
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Handling concurrent operations - part 2}
+  \begin{figure}
+    \centering
+    \includegraphics<1>[scale=0.75]{img/concurrent-op-before-applying.pdf}
+    \includegraphics<2-5>[scale=0.75]{img/concurrent-op-add-epochs.pdf}
+    \includegraphics<6>[scale=0.75]{img/concurrent-op-correct-result.pdf}
+    \caption{Example of concurrent insert}
+  \end{figure}
+  \vspace{-3mm}
+  \begin{itemize}
+    \item<2-> Use \emph{epoch-based} system to track concurrent operations
+    \item<3-> Transform operations against \emph{rename} ones (\emph{OT})
+    \begin{enumerate}
+      \item<4-> Find predecessor in former state (\id{i}{B0}{0}\id{f}{A0}{0})
+      \item<5-> Find its counterpart in new state (\id{i}{A1}{1})
+      \item<6> Prepend it to given id to form new id (\id{i}{A1}{1}\id{i}{B0}{0}\id{f}{A0}{0})
+    \end{enumerate}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Downsides}
+  \begin{block}{Need to store former state until no more concurrent operations}
+
+    \pause
+
+    \begin{itemize}
+      \item Can garbage collect it once the \emph{rename} operation is causally stable \footfullcite{10.1007/978-3-662-43352-2_11}
+      \item Can offload it to the disk meanwhile
+    \end{itemize}
+  \end{block}
+
+  \pause
+
+  \begin{block}{Need to propagate former state to other nodes}
+
+    \pause
+
+    \begin{itemize}
+      \item Can compress the operation to minimise bandwidth consumption
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+% \begin{frame}[standout]
+%   What about concurrent \emph{rename} operations ?
+% \end{frame}
+
+\begin{frame}[standout]
+  Evaluation
+\end{frame}
+
+
+\begin{frame}{Scenario}
+  \begin{itemize}
+    \item \textbf{Assumption:} Only one node can issue \emph{rename} operations
+  \end{itemize}
+
+  \begin{block}{Ran simulations to evaluate proposed approach:}
+    \begin{itemize}
+      \item 10 nodes share and edit a document collaboratively
+      \item Nodes use either LogootSplit or RenamableLogootSplit according to session
+      \pause
+      \item \textbf{Phase 1 (content generation):} 80/20\% of \emph{insert}/\emph{remove}
+      \item \textbf{Phase 2 (refactoring):} 50/50\% of \emph{insert}/\emph{remove}
+      \item Nodes switch to phase 2 when document reaches critical size (15 pages - 60k elements)
+      \pause
+      \item Overall, nodes perform 150k operations on the document
+      \item In the case of \emph{RenamableLogootSplit}, trigger a \emph{rename} operation every 30k operations
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}{Results - Convergence}
+  \begin{itemize}
+    \item Compared final content of nodes per sessions
+    \item Did not observe any divergence
+    \pause
+    \medskip
+    \item Empirical result, not a proof...
+    \item ... but represents first step towards the validation
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Results - Overhead of the data structure}
+  \begin{figure}
+    \centering
+    \includegraphics[width=0.7\textwidth]{img/snapshots-sizes.pdf}
+    \caption{Evolution of the size of the document}
+    \label{fig:evolution-document-size}
+  \end{figure}
+
+  \vspace{-1\baselineskip}
+  \begin{itemize}
+    \pause
+    \item \emph{Rename} resets the overhead of the CRDT, if can garbage collect
+    \pause
+    \item \emph{Rename} still reduces by $66\%$ the size otherwise
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Results - Integration time of \emph{insert} operations}
+  \begin{figure}
+    \captionsetup[subfigure]{aboveskip=-1pt,belowskip=-1pt}
+    \centering
+    \begin{subfigure}{0.47\textwidth}
+        \includegraphics[width=1\textwidth]{img/integration-time-boxplot-local-operations-without-outliers.pdf}
+        \caption{Local operations}
+        \label{fig:evolution-integration-time-local-insert-remove}
+    \end{subfigure}
+    \begin{subfigure}{0.47\textwidth}
+        \includegraphics[width=1\textwidth]{img/integration-time-boxplot-remote-operations-without-outliers.pdf}
+        \caption{Remote operations}
+        \label{fig:evolution-integration-time-remote-insert-remove}
+    \end{subfigure}
+    \caption{Evolution of the integration time of \emph{insert} operations}
+    \label{fig:evolution-integration-time-insert-remove}
+  \end{figure}
+
+  \vspace{-1\baselineskip}
+  \begin{itemize}
+    \pause
+    \item \emph{Rename} resets integration times of future operations
+    \pause
+    \item Transforming concurrent operations is actually faster than applying them on former state
+  \end{itemize}
+
+\end{frame}
+
+\begin{frame}{Results - Integration time of \emph{rename} operations}
+  \begin{figure}
+    \centering
+    \includegraphics[width=0.6\textwidth]{img/integration-time-rename.pdf}
+    \caption{Evolution of the integration time of \emph{rename} operations}
+    \label{fig:evolution-integration-time-rename}
+  \end{figure}
+
+  \vspace{-1\baselineskip}
+  \begin{itemize}
+    \pause
+    \item Noticeable by users if delayed too much
+    \pause
+    \item When to trigger \emph{rename} operations?
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{To wrap up}
+  \begin{block}{Done}
+    \vspace{-1mm}
+    \begin{itemize}
+      \item Designed a \emph{rename} operation for LogootSplit
+      \item Defined transformation functions to deal with concurrent updates
+    \end{itemize}
+  \end{block}
+
+  \pause
+
+  \begin{block}{Work in progress}
+    \vspace{-1mm}
+    \begin{itemize}
+      \item Implementing support of concurrent \emph{rename} operations in MUTE \footfullcite{nicolas:hal-01655438}, our P2P collaborative text editor
+      \item Proceeding to its validation
+      \item Designing the strategy to trigger \emph{rename} operations
+    \end{itemize}
+  \end{block}
+
+  \pause
+
+  \begin{block}{To do}
+    \vspace{-1mm}
+    \begin{itemize}
+      \item Prove formally the correctness of the mechanism
+      \item Investigate the combination of OT techniques and CRDTs
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}[standout]
+  Thanks for your attention, any questions?
+  \vspace{3em}
+  \begin{center}
+    \ccby
+  \end{center}
+\end{frame}
+
+\begin{frame}{LogootSplit identifiers}
+  \begin{itemize}
+    \item To comply with these constraints, LogootSplit proposes identifiers composed of quadruplets of integers of the following form:
+  \end{itemize}
+  \begin{center}
+    $<priority, siteId, seq, offset>$
+  \end{center}
+  \begin{itemize}
+    \item \emph{priority} allows to determine the position of this identifier compared to others
+    \item \emph{siteId} refers to the node's identifier, assumed to be unique
+    \item \emph{seq} refers to the node's logical clock, which increases monotonically with local operations
+    \item \emph{offset} refers to the element position in its original block
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Identifier constraints}
+  \begin{itemize}
+    \item To fulfill their role, identifiers have to comply to several constraints:
+  \end{itemize}
+
+  \begin{block}{Globally unique}
+    \begin{itemize}
+      \item Identifiers should never be generated twice, neither by different users nor by the same one at different times
+    \end{itemize}
+  \end{block}
+  \begin{block}{Totally ordered}
+    \begin{itemize}
+      \item We should always be able to compare and order two elements using their identifiers
+    \end{itemize}
+  \end{block}
+  \begin{block}{Dense set}
+    \begin{itemize}
+      \item We should always be able to add a new element, and thus a new identifier, between two others
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}{Handling concurrent \emph{rename}}
+  \begin{center}
+    \emph{The topic of a later contribution}
+  \end{center}
+
+  \pause
+
+  \begin{block}{\alert{\emph{rename} operation not commutative}}
+  \end{block}
+
+  \pause
+
+  \begin{block}{To fix this:}
+    \begin{itemize}
+      \item Define a total order between \emph{rename} operations
+      \item Pick a "winner" operation between concurrent \emph{renames}
+      \item Define additional transformation functions to \emph{undo} the effect of "losing" ones
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}{Perspectives}
+  \begin{block}{Propose a strategy to avoid conflicting \emph{rename} operations}
+    \begin{itemize}
+      \item How to minimise likelihood of concurrent \emph{rename} operations without coordinating?
+    \end{itemize}
+  \end{block}
+
+  \pause
+
+  \begin{block}{Propose a smarter strategy to choose the "winning" renaming}
+    \begin{itemize}
+      \item How to minimise the overall computations?
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}{Experimental settings}
+  \begin{itemize}
+    \item Use Node.js version 13.1.0
+    \item Obtained documents sizes using our fork of \emph{object-sizeof} \footnote{\url{https://www.npmjs.com/package/object-sizeof}}
+    \item Ran benchmarks on a workstation equipped of a Intel Xeon CPU E5-1620 (10MB Cache, 3.50 GHz) with 16GB of RAM running Fedora 31
+    \item Measured times using \texttt{process.hrtime.bigint()}
+  \end{itemize}
+\end{frame}
+
+\end{document}
