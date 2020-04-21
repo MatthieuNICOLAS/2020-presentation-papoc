@@ -241,9 +241,9 @@
         to ++(270:2) node {\textbf{B}}
         to ++(0:\widthletter) node[block, label=below:{\id{i}{B0}{0..2}}] (HLOB) {HLO};
 
-      \draw<2->[->, thick] (HLOA) -- node[above, align=center]{\emph{insert "e"}\\\emph{between}\\\emph{"h" and "l"}} (HA);
-      \draw<4->[dotted] (HLOB) -- (HB);
-      \draw<4->[->, thick] (LO.east) -- node[near end, below left, align=center]{\emph{insert "e"}\\\emph{at}\\\id{i}{B0}{0}\id{f}{A0}{0}} (HB.west);
+      \draw[visible on=<2->, ->, thick] (HLOA) -- node[above, align=center]{\emph{insert "e"}\\\emph{between}\\\emph{"h" and "l"}} (HA);
+      \draw[visible on=<4->, dotted] (HLOB) -- (HB);
+      \draw[visible on=<4->, ->, thick] (LO.east) -- node[near end, below left, align=center]{\emph{insert "e"}\\\emph{at}\\\id{i}{B0}{0}\id{f}{A0}{0}} (HB.west);
     \end{tikzpicture}
     \caption{Example of concurrent $insert$ operations}
   \end{figure}
