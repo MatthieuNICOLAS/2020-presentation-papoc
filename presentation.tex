@@ -94,9 +94,9 @@
 \begin{frame}{Context}
   \begin{itemize}
     \item Working on data replication in Local-first softwares \footfullcite{10.1145/3359591.3359737}
-    \item Currently focusing on \emph{Sequence \acp{CRDT}}
+    \item Focusing on \emph{Sequence \acp{CRDT}}
     \begin{itemize}
-      \item Notably used for real-time collaborative text editing
+      \item Real-time collaborative text editing
     \end{itemize}
   \end{itemize}
 \end{frame}
@@ -104,7 +104,7 @@
 \begin{frame}{LogootSplit \footfullcite{AndreCollaborateCom2013}}
   \begin{itemize}
     \item State of the art of \emph{Sequence \acp{CRDT}}
-    \item Elements are ordered by their identifier, noted here with the following formalism: \id{position}{node~id~node~seq}{offset}
+    \item Elements are ordered by their identifier, noted here with the following formalism: \id{position}{node\_id~node\_seq}{offset}
   \end{itemize}
 
   \pause
@@ -167,21 +167,6 @@
 
 %   Reassign shorter identifiers in a fully distributed manner
 % \end{frame}
-
-\begin{frame}{Related work}
-  \begin{itemize}
-    \item Core-nebula approach \footfullcite{zawirski:hal-01248197}
-    \begin{itemize}
-      \item Reassigns shorter identifiers to elements\dots
-      \item \dots but requires consensus
-    \end{itemize}
-    \item LSEQ \footfullcite{doi:10.1002/cpe.4108}
-    \begin{itemize}
-      \item Set of strategies to reduce the growth of identifiers \dots
-      \item \dots but overhead still proportional to number of elements
-    \end{itemize}
-  \end{itemize}
-\end{frame}
 
 \begin{frame}[standout]
   \alert{Our approach}
@@ -279,9 +264,9 @@
   \begin{block}{Ran simulations to evaluate proposed approach:}
     \begin{itemize}
       \item \textbf{Phase 1 (content generation):} 80/20\% of \emph{insert}/\emph{remove}
-      \item \textbf{Phase 2 (refactoring):} 50/50\% of \emph{insert}/\emph{remove}
+      \item \textbf{Phase 2 (editing):} 50/50\% of \emph{insert}/\emph{remove}
       \item Nodes switch to phase 2 when document reaches critical size (15 pages - 60k elements)
-      \pause
+      \bigskip
       \item Overall, nodes perform 150k operations on the document
       \item Trigger a \emph{rename} operation every 30k operations
     \end{itemize}
@@ -292,8 +277,7 @@
   \begin{itemize}
     \item Compared final content of nodes per sessions
     \item Did not observe any divergence
-    \pause
-    \medskip
+    \bigskip
     \item Empirical result, not a proof...
     \item ... but represents first step towards the validation
   \end{itemize}
@@ -309,9 +293,7 @@
 
   \vspace{-1\baselineskip}
   \begin{itemize}
-    \pause
     \item \emph{Rename} resets the overhead of the CRDT, if can garbage collect
-    \pause
     \item \emph{Rename} still reduces by $66\%$ the size otherwise
   \end{itemize}
 \end{frame}
@@ -336,9 +318,7 @@
 
   \vspace{-1\baselineskip}
   \begin{itemize}
-    \pause
     \item \emph{Rename} resets integration times of future operations
-    \pause
     \item Transforming concurrent operations is actually faster than applying them on former state
   \end{itemize}
 
@@ -354,10 +334,8 @@
 
   \vspace{-1\baselineskip}
   \begin{itemize}
-    \pause
     \item Noticeable by users if delayed too much
-    \pause
-    \item When to trigger \emph{rename} operations?
+    \item \alert{Research trail: when to trigger \emph{rename} operations?}
   \end{itemize}
 \end{frame}
 
@@ -405,12 +383,12 @@
     \item To comply with these constraints, LogootSplit proposes identifiers composed of quadruplets of integers of the following form:
   \end{itemize}
   \begin{center}
-    $<priority, siteId, seq, offset>$
+    \id{position}{node\_id~node\_seq}{offset}
   \end{center}
   \begin{itemize}
-    \item \emph{priority} allows to determine the position of this identifier compared to others
-    \item \emph{siteId} refers to the node's identifier, assumed to be unique
-    \item \emph{seq} refers to the node's logical clock, which increases monotonically with local operations
+    \item \emph{position} allows to determine the position of this identifier compared to others
+    \item \emph{node\_id} refers to the node's identifier, assumed to be unique
+    \item \emph{node\_seq} refers to the node's logical clock, which increases monotonically with local operations
     \item \emph{offset} refers to the element position in its original block
   \end{itemize}
 \end{frame}
@@ -437,23 +415,30 @@
   \end{block}
 \end{frame}
 
+\begin{frame}{Related work}
+  \begin{itemize}
+    \item Core-nebula approach \footfullcite{zawirski:hal-01248197}
+    \begin{itemize}
+      \item Reassigns shorter identifiers to elements\dots
+      \item \dots but requires consensus
+    \end{itemize}
+    \item LSEQ \footfullcite{doi:10.1002/cpe.4108}
+    \begin{itemize}
+      \item Set of strategies to reduce the growth of identifiers \dots
+      \item \dots but overhead still proportional to number of elements
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
 \begin{frame}{Downsides}
   \begin{block}{Need to store former state until no more concurrent operations}
-
-    \pause
-
     \begin{itemize}
       \item Can garbage collect it once the \emph{rename} operation is causally stable \footfullcite{10.1007/978-3-662-43352-2_11}
       \item Can offload it to the disk meanwhile
     \end{itemize}
   \end{block}
 
-  \pause
-
   \begin{block}{Need to propagate former state to other nodes}
-
-    \pause
-
     \begin{itemize}
       \item Can compress the operation to minimise bandwidth consumption
     \end{itemize}
@@ -465,12 +450,8 @@
     \emph{The topic of a later contribution}
   \end{center}
 
-  \pause
-
   \begin{block}{\alert{\emph{rename} operation not commutative}}
   \end{block}
-
-  \pause
 
   \begin{block}{To fix this:}
     \begin{itemize}
@@ -487,8 +468,6 @@
       \item How to minimise likelihood of concurrent \emph{rename} operations without coordinating?
     \end{itemize}
   \end{block}
-
-  \pause
 
   \begin{block}{Propose a smarter strategy to choose the "winning" renaming}
     \begin{itemize}
