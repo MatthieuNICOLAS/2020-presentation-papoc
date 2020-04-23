@@ -273,22 +273,23 @@
 % \end{frame}
 
 \begin{frame}[standout]
-  Evaluation
+  \alert{Evaluation}
+
+  \bigskip
+  Ran simulations to compare RenamableLogootSplit performances to LogootSplit ones
 \end{frame}
 
 
-\begin{frame}{Scenario}
-  \begin{block}{Ran simulations to evaluate proposed approach:}
-    \begin{itemize}
-      \item \textbf{Phase 1 (content generation):} 80/20\% of \emph{insert}/\emph{remove}
-      \item \textbf{Phase 2 (editing):} 50/50\% of \emph{insert}/\emph{remove}
-      \item Nodes switch to phase 2 when document reaches critical size (15 pages - 60k elements)
-      \bigskip
-      \item Overall, nodes perform 150k operations on the document
-      \item Trigger a \emph{rename} operation every 30k operations
-    \end{itemize}
-  \end{block}
-\end{frame}
+% \begin{frame}{Scenario}
+%     \begin{itemize}
+%       \item \textbf{Phase 1 (content generation):} 80/20\% of \emph{insert}/\emph{remove}
+%       \item \textbf{Phase 2 (editing):} 50/50\% of \emph{insert}/\emph{remove}
+%       \item Nodes switch to phase 2 when document reaches critical size (15 pages - 60k elements)
+%       \bigskip
+%       \item Overall, nodes perform 150k operations on the document
+%       \item Trigger a \emph{rename} operation every 30k operations
+%     \end{itemize}
+% \end{frame}
 
 \begin{frame}{Results - Convergence}
   \begin{itemize}
@@ -301,17 +302,25 @@
 \end{frame}
 
 \begin{frame}{Results - Overhead of the data structure}
+  \begin{itemize}
+    \item \textbf{Phase 1 (content generation):} 80/20\% of \emph{insert}/\emph{remove}
+    \item \textbf{Phase 2 (editing):} 50/50\% of \emph{insert}/\emph{remove}
+    \item Nodes switch to phase 2 when document reaches critical size (15 pages - 60k elements)
+  \end{itemize}
+
   \begin{figure}
     \centering
-    \includegraphics[width=0.7\textwidth]{img/snapshots-sizes.pdf}
+    \only<1>{\hspace{-10mm}\includegraphics[width=0.61\textwidth]{img/snapshots-sizes-1.pdf}}
+    \includegraphics<2>[width=0.7\textwidth]{img/snapshots-sizes-2.pdf}
+    \includegraphics<3>[width=0.7\textwidth]{img/snapshots-sizes.pdf}
     \caption{Evolution of the size of the document}
     \label{fig:evolution-document-size}
   \end{figure}
 
   \vspace{-1\baselineskip}
   \begin{itemize}
-    \item \emph{Rename} resets the overhead of the CRDT, if can garbage collect
-    \item \emph{Rename} still reduces by $66\%$ the size otherwise
+    \item<2-> \emph{Rename} resets the overhead of the CRDT, if can garbage collect
+    \item<3> \emph{Rename} still reduces by $66\%$ the size otherwise
   \end{itemize}
 \end{frame}
 
@@ -358,7 +367,7 @@
   \alert{Research trail: propose strategies to retain acceptable integration time for \emph{rename} operations}
 \end{frame}
 
-\begin{frame}{To wrap up}
+\begin{frame}{Conclusion}
   \begin{block}{Done}
     \vspace{-1mm}
     \begin{itemize}
