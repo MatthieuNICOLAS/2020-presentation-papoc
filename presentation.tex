@@ -12,6 +12,8 @@
 \usetikzlibrary{positioning}
 \usepackage{verbatim}
 
+\usepackage{transparent}
+
 \usepackage{graphicx}
 \usepackage{color}
 \AtBeginDocument{
@@ -97,6 +99,62 @@
       \item Real-time collaborative text editing
     \end{itemize}
   \end{itemize}
+\end{frame}
+
+\begin{frame}{\acfp{CRDT} \footfullcite{shapiro_2011_crdt}}
+  \begin{columns}
+    \begin{column}{0.65\textwidth}
+      \begin{tikzpicture}
+
+        \node (origin) {};
+        \path (origin)
+          to ++(90:2) node[label=below:{\textbf{A}},
+            label=above:{
+              \includegraphics<1>[scale=0.5]{img/doc.pdf}
+              \includegraphics<2-4>[scale=0.5]{img/docA.pdf}
+              \includegraphics<5->[scale=0.5]{img/docABC.pdf}}
+          ] (A) {\includegraphics{img/blue-node.pdf}};
+
+        \path (origin)
+          to ++(225:2) node[label=below:{\textbf{B}},
+            label=left:{
+              \includegraphics<1-2>[scale=0.5]{img/doc.pdf}
+              \includegraphics<3>[scale=0.5]{img/docA.pdf}
+              \includegraphics<4>[scale=0.5]{img/docAB.pdf}
+              \includegraphics<5>[scale=0.5]{img/docABC.pdf}
+            }] (B) {\includegraphics{img/red-node.pdf}};
+
+        \path (origin)
+          to ++(-45:2) node[label=below:{\textbf{C}},
+            label=right:{
+              {\transparent{0.4}\includegraphics<1-3>[scale=0.5]{img/doc.pdf}}
+              \includegraphics<4>[scale=0.5]{img/docC.pdf}
+              \includegraphics<5->[scale=0.5]{img/docABC.pdf}
+            }] (C) {
+              {\transparent{0.4}\includegraphics<1-3>{img/green-node.pdf}}
+              \includegraphics<4->{img/green-node.pdf}
+              };
+
+        \draw (A) -- (B) -- (C) -- (A);
+
+        \node<2>[below left=-30pt and 5pt of A] {\includegraphics[scale=0.4]{img/blue-update.pdf}};
+        \node<2, 4>[below right=-30pt and 5pt of A] {\includegraphics[scale=0.4]{img/blue-update.pdf}};
+
+        \node<4>[below right=-4pt and 1pt of B] {\includegraphics[scale=0.5]{img/red-update.pdf}};
+        \node<4>[above left=1pt and -15pt of B] {\includegraphics[scale=0.5]{img/red-update.pdf}};
+
+        \node<4>[below left=-4pt and 1pt of C] {\includegraphics[scale=0.5]{img/green-update.pdf}};
+        \node<4>[above right=1pt and -15pt of C] {\includegraphics[scale=0.5]{img/green-update.pdf}};
+      \end{tikzpicture}
+    \end{column}
+    \begin{column}{0.35\textwidth}
+      \begin{itemize}
+        \item Replicated data structure
+        \item<2-> Updates performed without coordination
+        \item<5-> Strong Eventual Consistency
+      \end{itemize}
+    \end{column}
+  \end{columns}
 \end{frame}
 
 \begin{frame}{LogootSplit \footfullcite{AndreCollaborateCom2013}}
@@ -200,30 +258,10 @@
     \item In this talk, focus on scenario without concurrent \emph{rename} operations
   \end{itemize}
   \begin{figure}
-    \begin{tikzpicture}
-      \path
-          node {\textbf{A}}
-          to ++(0:\widthletter) node[letter, label=below:{\id{i}{B0}{0}}] {H}
-          to ++(0:\widthletter) node[letter, fill=mydarkorange, label=above:{\color{mydarkorange}\id{i}{B0}{0}\id{f}{A0}{0}}] {E}
-          to ++(0:\widthletter) node[block, label=below:{\id{i}{B0}{1..2}}] (LO) {LO}
-          to ++(0:4 * \widthletter) node[visible on=<{2-3}>, letter, fill=mydarkblue,
-              label={ [visible on=<{2-3}>] below:{\color{mydarkblueid}\id{i}{A1}{0}} }
-            ] (H) {H}
-          to ++(0:\widthletter) node[visible on=<3>, letter, fill=mydarkblue,
-              label={ [visible on=<3>] below:{\color{mydarkblueid}\id{i}{A1}{1}} }
-            ] {E}
-          to ++(0:\widthletter) node[visible on=<3>, letter, fill=mydarkblue,
-              label={ [visible on=<3>] below:{\color{mydarkblueid}\id{i}{A1}{2}} }
-            ] {L}
-          to ++(0:\widthletter) node[visible on=<3>, letter, fill=mydarkblue,
-            label={ [visible on=<3>] below:{\color{mydarkblueid}\id{i}{A1}{3}} }
-          ] {0}
-          to ++(180:3 * \widthletter) node[visible on=<4>, block, fill=mydarkblue,
-              label={ [visible on=<4>] below:{\color{mydarkblueid}\id{i}{A1}{0..3}} }
-            ] (HELO) {HELO};
-
-      \draw[->, thick] (LO) -- node[below, align=center]{\emph{rename}} (H);
-    \end{tikzpicture}
+    \includegraphics<1>{img/rename-op-initial-state.pdf}
+    \includegraphics<2>{img/rename-op-first-id.pdf}
+    \includegraphics<3>{img/rename-op-remaining-ids.pdf}
+    \includegraphics<4>{img/rename-op-final-state.pdf}
     \caption{Example of renaming}
   \end{figure}
   \begin{itemize}
@@ -266,6 +304,22 @@
       \item<4-> Prepend it to given id to form new id (\id{i}{A1}{1}\id{i}{B0}{0}\id{f}{A0}{0})
     \end{enumerate}
   \end{itemize}
+\end{frame}
+
+\begin{frame}{Downsides}
+  \begin{block}{Need to store former state until no more concurrent operations}
+    \begin{itemize}
+      \item Can garbage collect it once the \emph{rename} operation is causally stable \footfullcite{10.1007/978-3-662-43352-2_11}
+      \item Can offload it to the disk meanwhile
+    \end{itemize}
+  \end{block}
+
+  \begin{block}{Need to propagate former state to other nodes}
+    \begin{itemize}
+      \item Can compress the operation to minimise bandwidth consumption
+      \item Can trigger \emph{rename} operations at a given number of blocks
+    \end{itemize}
+  \end{block}
 \end{frame}
 
 % \begin{frame}[standout]
@@ -456,21 +510,6 @@
       \item \dots but overhead still proportional to number of elements
     \end{itemize}
   \end{itemize}
-\end{frame}
-
-\begin{frame}{Downsides}
-  \begin{block}{Need to store former state until no more concurrent operations}
-    \begin{itemize}
-      \item Can garbage collect it once the \emph{rename} operation is causally stable \footfullcite{10.1007/978-3-662-43352-2_11}
-      \item Can offload it to the disk meanwhile
-    \end{itemize}
-  \end{block}
-
-  \begin{block}{Need to propagate former state to other nodes}
-    \begin{itemize}
-      \item Can compress the operation to minimise bandwidth consumption
-    \end{itemize}
-  \end{block}
 \end{frame}
 
 \begin{frame}{Handling concurrent \emph{rename}}
